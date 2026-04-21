@@ -1,59 +1,114 @@
-// ─── Arweave Deploy ───────────────────────────────────────────
-// Deploy the current IDE state to Arweave via arweave-js
+import { TurboFactory } from "@ardrive/turbo-sdk/web";
+import Arweave from "arweave";
+import { buildVitePreviewHTML } from "../runtime/vitePreview.js";
 
-export async function deploy(walletJSON, htmlContent, onProgress) {
-    onProgress?.('Initializing Arweave client...')
+export async function shareCode(codeContent) {
+    const tags = [
+        { name: "Content-Type", value: "text/plain" },
+        { name: "App-Name", value: "antigravity-ide" },
+    ];
 
-    let Arweave
-    try {
-        const mod = await import('arweave')
-        Arweave = mod.default
-    } catch (e) {
-        throw new Error('Failed to load arweave-js: ' + e.message)
+    // Generate a throwaway wallet — free for uploads under 100KB
+    const arweave = Arweave.init({});
+    const jwk = await arweave.wallets.generate();
+
+    const turbo = await TurboFactory.authenticated({
+        privateKey: jwk,
+        token: "arweave",
+    });
+
+    const encoder = new TextEncoder();
+    const data = encoder.encode(codeContent);
+
+    // Check size — warn if over 100KB
+    if (data.byteLength > 100 * 1024) {
+        throw new Error(
+            `Code is ${(data.byteLength / 1024).toFixed(1)}KB — exceeds the 100KB free limit.`
+        );
     }
 
-    const arweave = Arweave.init({
-        host: 'arweave.net',
-        port: 443,
-        protocol: 'https',
-    })
+    const result = await turbo.upload({
+        data,
+        dataItemOpts: { tags },
+    });
 
-    // Parse wallet
-    let wallet
+    return await buildShareResult(result.id);
+}
+
+export async function shareProject(files, entryFile) {
+    const tags = [
+        { name: "Content-Type", value: "text/html" },
+        { name: "App-Name", value: "antigravity-ide" },
+        { name: "Share-Type", value: "project-preview" },
+    ];
+
+    const arweave = Arweave.init({});
+    const jwk = await arweave.wallets.generate();
+
+    const turbo = await TurboFactory.authenticated({
+        privateKey: jwk,
+        token: "arweave",
+    });
+
+    const html = buildVitePreviewHTML(files || {}, entryFile || "index.html");
+    const encoder = new TextEncoder();
+    const data = encoder.encode(html);
+
+    if (data.byteLength > 100 * 1024) {
+        throw new Error(
+            `Project preview is ${(data.byteLength / 1024).toFixed(1)}KB — exceeds the 100KB free limit. Try URL share for smaller projects, or reduce files.`,
+        );
+    }
+
+    const result = await turbo.upload({
+        data,
+        dataItemOpts: { tags },
+    });
+
+    return await buildShareResult(result.id);
+}
+
+async function buildShareResult(id) {
+    const links = [
+        `https://turbo-gateway.com/${id}`,
+        `https://arweave.net/${id}`,
+        `https://ar.io/${id}`,
+    ];
+
+    const readyURL = await waitForReadableLink(links, {
+        attempts: 8,
+        delayMs: 2500,
+    });
+
+    return {
+        id,
+        shareURL: readyURL || links[0],
+        links,
+        isReady: Boolean(readyURL),
+    };
+}
+
+async function waitForReadableLink(links, { attempts, delayMs }) {
+    for (let i = 0; i < attempts; i++) {
+        for (const link of links) {
+            if (await isReadable(link)) return link;
+        }
+        if (i < attempts - 1) {
+            await sleep(delayMs);
+        }
+    }
+    return null;
+}
+
+async function isReadable(url) {
     try {
-        wallet = typeof walletJSON === 'string' ? JSON.parse(walletJSON) : walletJSON
+        const res = await fetch(url, { method: "GET", cache: "no-store" });
+        return res.ok;
     } catch {
-        throw new Error('Invalid wallet JSON — please paste your Arweave wallet file contents')
+        return false;
     }
+}
 
-    onProgress?.('Building transaction...')
-
-    const data = typeof htmlContent === 'string'
-        ? new TextEncoder().encode(htmlContent)
-        : htmlContent
-
-    const tx = await arweave.createTransaction({ data }, wallet)
-
-    // Tags
-    tx.addTag('Content-Type', 'text/html')
-    tx.addTag('App-Name', 'AntigravityIDE')
-    tx.addTag('Version', '1.0')
-    tx.addTag('Created-At', new Date().toISOString())
-
-    onProgress?.('Signing transaction...')
-    await arweave.transactions.sign(tx, wallet)
-
-    onProgress?.('Uploading to Arweave...')
-    const response = await arweave.transactions.post(tx)
-
-    if (response.status !== 200 && response.status !== 202) {
-        throw new Error(`Arweave upload failed: ${response.status} ${response.statusText}`)
-    }
-
-    const txId = tx.id
-    const arlinkUrl = `https://arlink.ar.io/${txId}`
-
-    onProgress?.(`Deployed! TX: ${txId}`)
-
-    return { txId, arlinkUrl, arweaveUrl: `https://arweave.net/${txId}` }
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }

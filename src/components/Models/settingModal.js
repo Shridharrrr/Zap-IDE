@@ -9,8 +9,8 @@ export function openSettingsModal() {
     overlay.id = 'settings-modal-overlay'
     overlay.className = 'modal-overlay'
 
-    const currentKey = state.get('apiKey')
     const currentModel = state.get('model')
+    const currentKey = state.get('apiKey') || ''
     const currentTheme = state.get('theme')
 
     overlay.innerHTML = `
@@ -18,33 +18,44 @@ export function openSettingsModal() {
       <h2 class="modal-title" id="settings-title">Settings</h2>
 
       <div class="form-group">
-        <label class="form-label" for="settings-apikey">Gemini API Key</label>
-        <div class="form-input-wrap">
-          <input
-            class="form-input"
-            id="settings-apikey"
-            type="password"
-            value="${escapeHtml(currentKey)}"
-            placeholder="AIza…"
-            spellcheck="false"
-            autocomplete="off"
-          />
-          <button class="show-hide-btn" id="toggle-key-vis" title="Show/hide key">👁</button>
+        <label class="form-label" for="settings-apikey">Bring your API key (Gemini)</label>
+        <input
+          class="form-input"
+          id="settings-apikey"
+          type="password"
+          placeholder="AIza…"
+          value="${escapeHtml(currentKey)}"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+          <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);cursor:pointer">
+            <input type="checkbox" id="settings-showkey" style="accent-color:var(--accent)" />
+            Show key
+          </label>
+          <span style="font-size:11px;color:var(--text-muted)">
+            Stored locally in your browser.
+          </span>
         </div>
-        <p style="font-size:11px;color:var(--text-muted);margin-top:6px">
-          Get yours at <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent-bright)">aistudio.google.com</a>
-        </p>
       </div>
 
       <div class="form-group">
         <label class="form-label" for="settings-model">Model</label>
         <select class="form-select" id="settings-model">
-          <option value="gemini-2.5-pro-preview-05-06"  ${currentModel === 'gemini-2.5-pro-preview-05-06' ? 'selected' : ''}>Gemini 2.5 Pro (Preview)</option>
-          <option value="gemini-2.0-flash"              ${currentModel === 'gemini-2.0-flash' ? 'selected' : ''}>Gemini 2.0 Flash</option>
-          <option value="gemini-2.0-flash-thinking-exp" ${currentModel === 'gemini-2.0-flash-thinking-exp' ? 'selected' : ''}>Gemini 2.0 Flash Thinking</option>
-          <option value="gemini-1.5-pro"                ${currentModel === 'gemini-1.5-pro' ? 'selected' : ''}>Gemini 1.5 Pro</option>
-          <option value="gemini-1.5-flash"              ${currentModel === 'gemini-1.5-flash' ? 'selected' : ''}>Gemini 1.5 Flash</option>
+          <optgroup label="Gemini (cloud)">
+            <option value="gemini-2.5-flash" ${currentModel === 'gemini-2.5-flash' ? 'selected' : ''}>gemini-2.5-flash</option>
+            <option value="gemini-2.5-flash-lite" ${currentModel === 'gemini-2.5-flash-lite' ? 'selected' : ''}>gemini-2.5-flash-lite</option>
+            <option value="gemini-2.5-pro" ${currentModel === 'gemini-2.5-pro' ? 'selected' : ''}>gemini-2.5-pro</option>
+          </optgroup>
+          <optgroup label="Local (Ollama)">
+            <option value="qwen2.5:3b" ${currentModel === 'qwen2.5:3b' ? 'selected' : ''}>qwen2.5:3b</option>
+            <option value="qwen2.5:7b" ${currentModel === 'qwen2.5:7b' ? 'selected' : ''}>qwen2.5:7b</option>
+            <option value="llama3.1:8b" ${currentModel === 'llama3.1:8b' ? 'selected' : ''}>llama3.1:8b</option>
+          </optgroup>
         </select>
+        <p style="font-size:11px;color:var(--text-muted);margin-top:6px">
+          Gemini requires an API key. Local models require Ollama at <code>http://127.0.0.1:11434</code>.
+        </p>
       </div>
 
       <div class="form-group">
@@ -65,13 +76,10 @@ export function openSettingsModal() {
 
     document.body.appendChild(overlay)
 
-    // Show/hide key toggle
-    const keyInput = overlay.querySelector('#settings-apikey')
-    const toggleBtn = overlay.querySelector('#toggle-key-vis')
-    toggleBtn.addEventListener('click', () => {
-        const isHidden = keyInput.type === 'password'
-        keyInput.type = isHidden ? 'text' : 'password'
-        toggleBtn.textContent = isHidden ? '🙈' : '👁'
+    // Show/hide key
+    overlay.querySelector('#settings-showkey').addEventListener('change', (e) => {
+        const input = overlay.querySelector('#settings-apikey')
+        input.type = e.target.checked ? 'text' : 'password'
     })
 
     // Save

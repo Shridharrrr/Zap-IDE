@@ -123,10 +123,45 @@ async function boot() {
   // 4. Check for shared URL
   const shared = decode();
   if (shared) {
-    setCode(shared.code || "");
-    if (shared.filename) state.set("filename", shared.filename);
+    if (shared.files && typeof shared.files === "object") {
+      const projectFiles = shared.files || {};
+      state.set("files", { ...projectFiles });
+
+      const editorCandidates = [
+        shared.entryFile,
+        "src/App.jsx",
+        "src/App.tsx",
+        "src/main.jsx",
+        "src/main.tsx",
+        "src/main.js",
+        "src/index.jsx",
+        "src/index.js",
+        "main.jsx",
+        "main.js",
+        "index.html",
+      ].filter(Boolean);
+
+      const mainFile =
+        editorCandidates.find((f) => projectFiles[f]) ||
+        Object.keys(projectFiles).find((f) => /\.(jsx|tsx|html?)$/.test(f)) ||
+        Object.keys(projectFiles)[0];
+
+      if (mainFile) {
+        state.set("currentFile", mainFile);
+        state.set("filename", mainFile.split("/").pop());
+        updateBreadcrumb(mainFile);
+        setCode(projectFiles[mainFile] || "");
+        editorAPI?.setLanguage(getEditorLanguage(mainFile));
+        updatePreview(projectFiles, mainFile);
+      }
+
+      showViewerBanner(setCode, projectFiles[mainFile] || "");
+    } else {
+      setCode(shared.code || "");
+      if (shared.filename) state.set("filename", shared.filename);
+      showViewerBanner(setCode, shared.code);
+    }
     clearHash();
-    showViewerBanner(setCode, shared.code);
   }
 
   // 5. Init File Tree
@@ -189,8 +224,14 @@ async function boot() {
     },
     onShare() {
       openShareModal({
-        getCode,
-        getFilename: () => state.get("currentFile") || state.get("filename"),
+        getFiles: () => {
+          const currentFile = state.get("currentFile");
+          const files = state.get("files") || {};
+          // Ensure the current editor buffer is included.
+          if (currentFile) return { ...files, [currentFile]: getCode() };
+          return { ...files };
+        },
+        getEntryFile: () => state.get("currentFile") || state.get("filename"),
       });
     },
     onSettings() {
@@ -245,12 +286,7 @@ async function boot() {
     },
   });
 
-  // 9. Check API key on first run
-  if (!state.get("apiKey")) {
-    setTimeout(() => {
-      showKeyReminder();
-    }, 1200);
-  }
+  // Local model mode: no cloud API key reminder needed.
 }
 
 // ─── Folder Import Handler ────────────────────────────────────

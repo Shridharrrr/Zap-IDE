@@ -5,7 +5,7 @@ const PERSIST_KEYS = ['apiKey', 'model', 'theme']
 
 const state = {
     apiKey: localStorage.getItem('ag_key') || '',
-    model: localStorage.getItem('ag_model') || 'gemini-2.5-flash',
+    model: localStorage.getItem('ag_model') || 'qwen2.5:3b',
     theme: localStorage.getItem('ag_theme') || 'vs-dark',
     filename: 'main.js',
     files: {},         // Map of filename -> content for folder view

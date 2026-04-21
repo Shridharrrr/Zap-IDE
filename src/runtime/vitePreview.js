@@ -22,9 +22,10 @@ export function isViteProject(files) {
 /**
  * Builds a fully self-contained HTML string from a map of project files.
  * @param {Object.<string,string>} files  { [virtualPath]: fileContent }
+ * @param {string=} preferredEntry  Optional preferred entry path
  * @returns {string}  HTML ready to set as iframe.srcdoc
  */
-export function buildVitePreviewHTML(files) {
+export function buildVitePreviewHTML(files, preferredEntry) {
   if (!files || Object.keys(files).length === 0) {
     return errorPage("No project files provided.");
   }
@@ -55,7 +56,16 @@ export function buildVitePreviewHTML(files) {
     "main.tsx",
     "main.js",
   ];
-  const entryFile = ENTRIES.find((c) => files[c] != null) || ENTRIES[0];
+  // IMPORTANT: Only boot from known Vite/React entrypoints.
+  // Never boot directly from component files like src/App.jsx (they usually export
+  // a component but do not call ReactDOM.createRoot().render()).
+  const preferredIsValidEntry =
+    preferredEntry && ENTRIES.includes(preferredEntry) && files[preferredEntry] != null;
+
+  const entryFile =
+    (preferredIsValidEntry ? preferredEntry : null) ||
+    ENTRIES.find((c) => files[c] != null) ||
+    ENTRIES[0];
 
   // ── 3. Safely serialize file map ──────────────────────────
   // Replace </script> so the JSON blob never closes the wrapping tag.
@@ -85,6 +95,29 @@ body{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-seri
   animation:__spin .75s linear infinite
 }
 @keyframes __spin{to{transform:rotate(360deg)}}
+.__stuck{
+  position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  padding:22px;background:#07070d;color:#eae6ff;z-index:10000;
+  opacity:0;pointer-events:none;
+  animation:__stuckFadeIn .01s linear forwards;
+  animation-delay:7s;
+}
+@keyframes __stuckFadeIn{to{opacity:1;pointer-events:auto}}
+.__stuck-card{
+  max-width:680px;width:100%;
+  border:1px solid rgba(123,97,255,.25);
+  border-radius:12px;
+  padding:18px 18px;
+  background:rgba(15,15,30,.65);
+  backdrop-filter: blur(10px);
+  box-shadow:0 0 40px rgba(123,97,255,.12);
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+.__stuck h3{margin:0 0 10px;font-size:14px;color:#b9a6ff}
+.__stuck p{margin:0 0 10px;font-size:12px;line-height:1.6;color:#c7c0de}
+.__stuck code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:11px}
+.__stuck a{color:#79ffe1;text-decoration:none}
+.__stuck a:hover{text-decoration:underline}
 .__preview-error{
   padding:24px;color:#ff4d6a;font-family:monospace;font-size:12px;
   background:#0d0009;min-height:100vh;white-space:pre-wrap;line-height:1.6;
@@ -109,6 +142,10 @@ function _esc(s){
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+// If JS is running, we can hide the CSP/JS-block fallback overlay immediately.
+var __stuckEl=document.getElementById('__stuck');
+if(__stuckEl){ __stuckEl.style.display='none'; }
+
 function _showError(text){
   var r=document.getElementById('root');
   if(r){
@@ -120,10 +157,32 @@ function _showError(text){
   }
 }
 
+function _ensureMountContainers(){
+  var rootEl=document.getElementById('root');
+  var appEl=document.getElementById('app');
+
+  if(!rootEl){
+    rootEl=document.createElement('div');
+    rootEl.id='root';
+    rootEl.style.minHeight='100vh';
+    document.body.appendChild(rootEl);
+  }
+
+  if(!appEl){
+    appEl=document.createElement('div');
+    appEl.id='app';
+    appEl.style.minHeight='100vh';
+    document.body.appendChild(appEl);
+  }
+}
+
 /* ── environment shims ───────────────────────────────────── */
 if(typeof window.process==='undefined'){
   window.process={env:{NODE_ENV:'development'},browser:true,version:''};
 }
+
+/* ── ensure common React mount points exist ──────────────── */
+_ensureMountContainers();
 
 /* ── global error catchers ───────────────────────────────── */
 window.onerror=function(msg,src,line,col,err){
@@ -322,6 +381,22 @@ try{
     <div class="__loader">
       <div class="__loader-ring"></div>
       <span>Loading preview&hellip;</span>
+    </div>
+  </div>
+
+  <!-- Fallback overlay: appears if scripts never run (e.g. CSP blocks inline JS). -->
+  <div class="__stuck" id="__stuck">
+    <div class="__stuck-card">
+      <h3>Preview is taking too long</h3>
+      <p>
+        If this stays on “Loading”, this gateway is likely blocking scripts (CSP) or a CDN resource failed to load.
+      </p>
+      <p>
+        Try opening the project inside the IDE (URL share) instead of the gateway preview, or use a different gateway.
+      </p>
+      <p style="margin:0;color:#a9a2c6">
+        Tip: open DevTools → Console for errors like <code>Refused to execute inline script</code>.
+      </p>
     </div>
   </div>
 

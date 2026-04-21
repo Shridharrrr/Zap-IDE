@@ -4,47 +4,93 @@ export function buildPrompt(type, code, userMessage, errorContext = "") {
   const codeBlock = code?.trim()
     ? `\`\`\`javascript\n${code}\n\`\`\``
     : "_(no code yet)_";
+  const strictCodeOnlyRules = `STRICT OUTPUT CONTRACT (HIGHEST PRIORITY):
+You must obey this contract exactly. If any other instruction conflicts, this contract wins.
+
+ALLOWED OUTPUT SHAPES:
+1) SINGLE_FILE mode:
+   - Output must be exactly one fenced block:
+     \`\`\`javascript
+     ...code...
+     \`\`\`
+   - No text before or after the block.
+
+2) MULTI_FILE mode:
+   - Output must be one or more repeated FILE blocks:
+     FILE: path/to/file.ext
+     \`\`\`ext
+     ...file content...
+     \`\`\`
+   - No text before, between (except valid FILE blocks), or after FILE blocks.
+
+FORBIDDEN CONTENT:
+- Any prose explanation, summaries, headings, bullet points, or conversational text.
+- Any shell/terminal/install commands or CLI guidance.
+- Any command strings containing: npm, pnpm, yarn, pip, bash, sh, powershell, curl, wget.
+- Placeholders/TODOs like: "add later", "rest of code", "...".
+
+QUALITY REQUIREMENTS:
+- Return complete code only (no partial snippets).
+- Preserve valid syntax and imports.
+- Do not truncate output intentionally.
+- If the request is ambiguous, choose the most reasonable full code implementation and still follow output shape strictly.`;
 
   switch (type) {
     case "write":
       return `You are an expert Node.js developer helping with a browser-based JavaScript sandbox (AlmostNode).
+${strictCodeOnlyRules}
+MODE: SINGLE_FILE
+
 The user has this code:
 ${codeBlock}
 
 User request: ${userMessage}
 
 Write clean, well-commented Node.js compatible JavaScript. If writing new code, replace the entire editor content.
-Wrap your code in a single \`\`\`javascript code block.
-After the code block, briefly explain what it does in 1-2 sentences.`;
+Wrap your code in a single \`\`\`javascript code block.`;
 
     case "fix":
       return `You are an expert Node.js developer debugging code in a browser sandbox.
+${strictCodeOnlyRules}
+MODE: SINGLE_FILE
+
 Current code:
 ${codeBlock}
 
 ${errorContext ? `Error output:\n\`\`\`\n${errorContext}\n\`\`\`\n` : ""}
 ${userMessage ? `User message: ${userMessage}\n` : ""}
-Diagnose and fix the bug. Show the corrected full code in a single \`\`\`javascript block.
-After the block, explain what was wrong and what you fixed (max 2 sentences).`;
+Diagnose and fix the bug. Show the corrected full code in a single \`\`\`javascript block.`;
 
     case "explain":
-      return `You are a patient Node.js educator. Explain the following code clearly:
+      return `You are a patient Node.js educator.
+${strictCodeOnlyRules}
+MODE: SINGLE_FILE
+
+The user asked for an explanation. Provide explanation as inline code comments only, not prose.
+Return a single \`\`\`javascript block containing the code with clear explanatory comments.
+
+Code to explain:
 ${codeBlock}
 
-${userMessage ? `The user specifically asks: ${userMessage}\n` : ""}
-Explain what the code does step by step. Be clear and concise. Use plain language.
-Do NOT rewrite the code unless asked.`;
+${userMessage ? `The user specifically asks: ${userMessage}\n` : ""}`;
 
     case "refactor":
-      return `You are an expert Node.js developer. Refactor the following code for better readability, performance, and modern JS practices:
+      return `You are an expert Node.js developer.
+${strictCodeOnlyRules}
+MODE: SINGLE_FILE
+
+Refactor the following code for better readability, performance, and modern JS practices:
 ${codeBlock}
 
 ${userMessage ? `Focus on: ${userMessage}\n` : ""}
-Show the refactored code in a single \`\`\`javascript block.
-Then list 2-3 key improvements you made.`;
+Show the refactored code in a single \`\`\`javascript block.`;
 
     case "tests":
-      return `You are a Node.js testing expert. Write comprehensive tests for this code:
+      return `You are a Node.js testing expert.
+${strictCodeOnlyRules}
+MODE: SINGLE_FILE
+
+Write comprehensive tests for this code:
 ${codeBlock}
 
 ${userMessage ? `Additional requirements: ${userMessage}\n` : ""}
@@ -52,7 +98,11 @@ Use a simple test framework compatible with the browser sandbox (no jest/mocha i
 Wrap tests in a single \`\`\`javascript block. The tests should run when the code is executed.`;
 
     case "vite":
-      return `You are an expert React developer. Generate a complete, multi-file React Vite project for the following request:
+      return `You are an expert React developer.
+${strictCodeOnlyRules}
+MODE: MULTI_FILE
+
+Generate a complete, multi-file React Vite project for the following request:
 
 ${userMessage}
 
@@ -76,18 +126,20 @@ Rules you MUST follow:
 3. Use ONLY react and react-dom — no other npm packages.
 4. Make the result visually polished, responsive, and fully functional.
 5. Every file must be complete and correct — no placeholders, no TODOs.
-6. After all FILE blocks, write 1-2 sentences describing what you built.`;
+6. Output ONLY FILE blocks. Do NOT include any summary text before or after the FILE blocks.`;
 
     case "chat":
     default:
       return `You are a helpful Node.js and JavaScript expert assistant embedded in Antigravity IDE — a browser-based code playground.
+${strictCodeOnlyRules}
+MODE: SINGLE_FILE
+
 Current editor code:
 ${codeBlock}
 
 User: ${userMessage}
 
-Be concise and helpful. If you write code, wrap it in a \`\`\`javascript code block.
-If there's no code involved, just answer the question conversationally.`;
+Return only a single \`\`\`javascript code block that best satisfies the request.`;
   }
 }
 
