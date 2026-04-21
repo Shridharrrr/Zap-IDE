@@ -1,0 +1,20 @@
+{
+  "name": "antigravity-ide",
+  "version": "1.0.0",
+  "description": "Browser-based AI-powered Node.js IDE",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "arweave": "^1.14.4",
+    "lz-string": "^1.5.0",
+    "monaco-editor": "^0.45.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "vite-plugin-monaco-editor": "^1.1.0"
+  }
+}
