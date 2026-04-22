@@ -5,23 +5,44 @@ import * as state from '../store/state.js'
 
 let fileTreeAPI = null
 
-const FILE_ICONS = {
-    js: '📜', javascript: '📜',
-    ts: '📘', typescript: '📘',
-    py: '🐍', python: '🐍',
-    json: '📋',
-    html: '🌐', htm: '🌐',
-    css: '🎨',
-    md: '📝', markdown: '📝',
-    folder: '📁',
-    folderOpen: '📂',
-    default: '📄'
+// ── SVG file icons (VS Code–style, colored) ───────────────────
+const SVG_ICONS = {
+  js: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="16" rx="2" fill="#f0db4f" fill-opacity="0.15"/><text x="2" y="12" font-size="9" font-family="monospace" font-weight="bold" fill="#f0db4f">JS</text></svg>`,
+  mjs: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="16" rx="2" fill="#f0db4f" fill-opacity="0.15"/><text x="2" y="12" font-size="9" font-family="monospace" font-weight="bold" fill="#f0db4f">JS</text></svg>`,
+  jsx: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="16" rx="2" fill="#61dafb" fill-opacity="0.15"/><text x="1" y="12" font-size="8" font-family="monospace" font-weight="bold" fill="#61dafb">JSX</text></svg>`,
+  ts: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="16" rx="2" fill="#3178c6" fill-opacity="0.2"/><text x="2" y="12" font-size="9" font-family="monospace" font-weight="bold" fill="#3b82f6">TS</text></svg>`,
+  tsx: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="16" rx="2" fill="#61dafb" fill-opacity="0.12"/><text x="1" y="12" font-size="8" font-family="monospace" font-weight="bold" fill="#61dafb">TSX</text></svg>`,
+  py: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="16" rx="2" fill="#3572a5" fill-opacity="0.18"/><text x="2" y="12" font-size="9" font-family="monospace" font-weight="bold" fill="#60a5fa">PY</text></svg>`,
+  json: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="16" rx="2" fill="#f59e0b" fill-opacity="0.12"/><text x="1" y="12" font-size="7.5" font-family="monospace" font-weight="bold" fill="#f59e0b">JSON</text></svg>`,
+  html: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="16" rx="2" fill="#e34c26" fill-opacity="0.15"/><text x="1" y="12" font-size="7" font-family="monospace" font-weight="bold" fill="#f97316">HTML</text></svg>`,
+  htm: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="16" rx="2" fill="#e34c26" fill-opacity="0.15"/><text x="1" y="12" font-size="7" font-family="monospace" font-weight="bold" fill="#f97316">HTML</text></svg>`,
+  css: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="16" rx="2" fill="#264de4" fill-opacity="0.15"/><text x="1" y="12" font-size="8" font-family="monospace" font-weight="bold" fill="#818cf8">CSS</text></svg>`,
+  scss: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="16" rx="2" fill="#c6538c" fill-opacity="0.15"/><text x="1" y="12" font-size="7" font-family="monospace" font-weight="bold" fill="#f472b6">SCSS</text></svg>`,
+  md: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="16" rx="2" fill="#a3a3a3" fill-opacity="0.12"/><text x="2" y="12" font-size="8" font-family="monospace" font-weight="bold" fill="#a1a1aa">MD</text></svg>`,
+  mdx: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="16" rx="2" fill="#a3a3a3" fill-opacity="0.12"/><text x="1" y="12" font-size="7.5" font-family="monospace" font-weight="bold" fill="#a1a1aa">MDX</text></svg>`,
+  svg: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="16" rx="2" fill="#f97316" fill-opacity="0.12"/><text x="1" y="12" font-size="8" font-family="monospace" font-weight="bold" fill="#f97316">SVG</text></svg>`,
+  png: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="16" rx="2" fill="#10b981" fill-opacity="0.12"/><path d="M3 11 L6 7 L9 10 L11 8 L13 11Z" fill="#10b981" fill-opacity="0.5"/><circle cx="5.5" cy="5.5" r="1.5" fill="#10b981" fill-opacity="0.7"/></svg>`,
+  jpg: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="16" rx="2" fill="#10b981" fill-opacity="0.12"/><path d="M3 11 L6 7 L9 10 L11 8 L13 11Z" fill="#10b981" fill-opacity="0.5"/><circle cx="5.5" cy="5.5" r="1.5" fill="#10b981" fill-opacity="0.7"/></svg>`,
+  webp: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="16" rx="2" fill="#10b981" fill-opacity="0.12"/><path d="M3 11 L6 7 L9 10 L11 8 L13 11Z" fill="#10b981" fill-opacity="0.5"/><circle cx="5.5" cy="5.5" r="1.5" fill="#10b981" fill-opacity="0.7"/></svg>`,
+  sh: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="16" rx="2" fill="#4ade80" fill-opacity="0.12"/><text x="2" y="12" font-size="9" font-family="monospace" font-weight="bold" fill="#4ade80">SH</text></svg>`,
+  env: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="16" rx="2" fill="#facc15" fill-opacity="0.12"/><text x="1" y="12" font-size="7.5" font-family="monospace" font-weight="bold" fill="#facc15">ENV</text></svg>`,
+  toml: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="16" rx="2" fill="#f87171" fill-opacity="0.12"/><text x="1" y="12" font-size="7" font-family="monospace" font-weight="bold" fill="#f87171">TOML</text></svg>`,
+  yaml: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="16" rx="2" fill="#a78bfa" fill-opacity="0.12"/><text x="1" y="12" font-size="7" font-family="monospace" font-weight="bold" fill="#a78bfa">YAML</text></svg>`,
+  yml: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="16" rx="2" fill="#a78bfa" fill-opacity="0.12"/><text x="1" y="12" font-size="7" font-family="monospace" font-weight="bold" fill="#a78bfa">YML</text></svg>`,
+  rs: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="16" rx="2" fill="#f97316" fill-opacity="0.15"/><text x="2" y="12" font-size="9" font-family="monospace" font-weight="bold" fill="#fb923c">RS</text></svg>`,
+  go: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="16" rx="2" fill="#00add8" fill-opacity="0.15"/><text x="2" y="12" font-size="9" font-family="monospace" font-weight="bold" fill="#22d3ee">GO</text></svg>`,
+  lua: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="16" rx="2" fill="#5b6ee1" fill-opacity="0.15"/><text x="1" y="12" font-size="8" font-family="monospace" font-weight="bold" fill="#818cf8">LUA</text></svg>`,
+  vue: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="16" rx="2" fill="#42b883" fill-opacity="0.15"/><text x="1" y="12" font-size="8" font-family="monospace" font-weight="bold" fill="#4ade80">VUE</text></svg>`,
+  // generic
+  default: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="#52525b" stroke-width="1.2"/><path d="M10 2v3h3" stroke="#52525b" stroke-width="1.2"/></svg>`,
+  folder: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 4a1 1 0 011-1h4l2 2h6a1 1 0 011 1v6a1 1 0 01-1 1H2a1 1 0 01-1-1V4z" fill="#a78bfa" fill-opacity="0.25" stroke="#a78bfa" stroke-width="1"/></svg>`,
+  folderOpen: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 4a1 1 0 011-1h4l2 2h6a1 1 0 011 1v1H1V4z" fill="#a78bfa" fill-opacity="0.3" stroke="#a78bfa" stroke-width="1"/><path d="M1 7h14l-1.5 6H2.5L1 7z" fill="#a78bfa" fill-opacity="0.2" stroke="#a78bfa" stroke-width="1"/></svg>`,
 }
 
 function getFileIcon(filename) {
-    if (!filename) return FILE_ICONS.default
+    if (!filename) return SVG_ICONS.default
     const ext = filename.split('.').pop()?.toLowerCase() || ''
-    return FILE_ICONS[ext] || FILE_ICONS.default
+    return SVG_ICONS[ext] || SVG_ICONS.default
 }
 
 export function initFileTree({ onFileSelect, onImportFolder }) {
@@ -124,21 +145,6 @@ function showCreateFileDialog(fileTreeAPI) {
                 <input type="text" id="new-filename" class="form-input" placeholder="example.js" 
                     style="font-family: var(--font-mono)" autocomplete="off">
             </div>
-            <div class="form-group">
-                <label class="form-label">Template (optional)</label>
-                <select id="file-template" class="form-select">
-                    <option value="">Empty file</option>
-                    <option value="js">JavaScript (.js)</option>
-                    <option value="jsx">React Component (.jsx)</option>
-                    <option value="ts">TypeScript (.ts)</option>
-                    <option value="tsx">React TS (.tsx)</option>
-                    <option value="py">Python (.py)</option>
-                    <option value="html">HTML (.html)</option>
-                    <option value="css">CSS (.css)</option>
-                    <option value="json">JSON (.json)</option>
-                    <option value="md">Markdown (.md)</option>
-                </select>
-            </div>
             <div class="modal-footer">
                 <button class="btn" id="cancel-create">Cancel</button>
                 <button class="btn btn-run" id="confirm-create">Create</button>
@@ -148,44 +154,21 @@ function showCreateFileDialog(fileTreeAPI) {
     document.body.appendChild(overlay)
 
     const filenameInput = overlay.querySelector('#new-filename')
-    const templateSelect = overlay.querySelector('#file-template')
     filenameInput?.focus()
 
     overlay.querySelector('#cancel-create').addEventListener('click', () => overlay.remove())
     overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove() })
     
     const createHandler = () => {
-        let filename = filenameInput.value.trim()
+        const filename = filenameInput.value.trim()
         if (!filename) {
             filenameInput.style.borderColor = 'var(--error)'
             return
         }
 
-        // Auto-add extension from template if not provided
-        const template = templateSelect.value
-        if (template && !filename.includes('.')) {
-            filename += '.' + template
-        }
-
-        const templates = {
-            'js': `// ${filename}\n\nconsole.log('Hello from ${filename}');\n`,
-            'jsx': `// ${filename}\nimport React from 'react';\n\nexport default function App() {\n  return (\n    <div>\n      <h1>Hello from ${filename}</h1>\n    </div>\n  );\n}\n`,
-            'ts': `// ${filename}\n\nconst greeting: string = 'Hello from ${filename}';\nconsole.log(greeting);\n`,
-            'tsx': `// ${filename}\nimport React from 'react';\n\ninterface Props {\n  name?: string;\n}\n\nexport default function App({ name = 'World' }: Props) {\n  return (\n    <div>\n      <h1>Hello, {name}!</h1>\n    </div>\n  );\n}\n`,
-            'py': `# ${filename}\n\nprint('Hello from ${filename}')\n`,
-            'html': `<!DOCTYPE html>\n<html>\n<head>\n  <title>${filename}</title>\n</head>\n<body>\n  <h1>Hello from ${filename}</h1>\n</body>\n</html>\n`,
-            'css': `/* ${filename} */\n\nbody {\n  font-family: system-ui, sans-serif;\n}\n`,
-            'json': `{\n  "name": "${filename.replace('.json', '')}",\n  "version": "1.0.0"\n}\n`,
-            'md': `# ${filename}\n\nWrite your documentation here.\n`
-        }
-
-        const ext = filename.split('.').pop()
-        const content = templates[ext] || ''
-
         try {
-            fileTreeAPI.createFile(filename, content)
+            fileTreeAPI.createFile(filename, '')
             overlay.remove()
-            // Trigger file select callback
             const onFileSelect = fileTreeAPI._onFileSelect
             if (onFileSelect) onFileSelect(filename)
         } catch (err) {
@@ -278,7 +261,7 @@ function renderTreeNode(node, path, onFileSelect, level = 0) {
         const icon = getFileIcon(node.name)
         return `
             <div class="file-tree-file" data-path="${node.path}" style="padding-left: ${level * 12}px">
-                <span class="file-icon">${icon}</span>
+                <span class="file-icon" style="width:16px;height:16px;display:inline-flex;align-items:center;flex-shrink:0">${icon}</span>
                 <span class="file-name" style="flex: 1;">${escapeHtml(node.name)}</span>
                 <button class="icon-btn-sm delete-file-btn" data-path="${node.path}" title="Delete File" style="opacity:0; padding:2px; height:auto; width:auto; margin-left:auto;">
                     <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
@@ -292,14 +275,17 @@ function renderTreeNode(node, path, onFileSelect, level = 0) {
 
     const folderPath = path ? `${path}/${node.name}` : node.name
     const isExpanded = state.get(`folderExpanded:${folderPath}`) ?? true
-    const folderIcon = isExpanded ? FILE_ICONS.folderOpen : FILE_ICONS.folder
+    const folderIcon = isExpanded ? SVG_ICONS.folderOpen : SVG_ICONS.folder
+    const chevron = isExpanded
+        ? `<svg viewBox="0 0 16 16" fill="none" width="10" height="10"><polyline points="4,6 8,10 12,6" stroke="#71717a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+        : `<svg viewBox="0 0 16 16" fill="none" width="10" height="10"><polyline points="6,4 10,8 6,12" stroke="#71717a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`
 
     let html = ''
     if (level > 0) {
         html += `
             <div class="file-tree-folder ${isExpanded ? 'expanded' : 'collapsed'}" data-path="${folderPath}" style="padding-left: ${(level - 1) * 12}px">
-                <span class="folder-toggle">${isExpanded ? '▼' : '▶'}</span>
-                <span class="folder-icon">${folderIcon}</span>
+                <span class="folder-toggle" style="display:inline-flex;align-items:center">${chevron}</span>
+                <span class="folder-icon" style="width:16px;height:16px;display:inline-flex;align-items:center;flex-shrink:0">${folderIcon}</span>
                 <span class="folder-name">${escapeHtml(node.name)}</span>
             </div>
         `

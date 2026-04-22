@@ -1,5 +1,5 @@
 /* ============================================================
-   antiG-IDE — Global Stylesheet
+   Zap-IDE — Global Stylesheet
    v0.dev-inspired dark theme | Inter + JetBrains Mono
    ============================================================ */
 
@@ -1338,42 +1338,6 @@ body {
     color: var(--amber);
     font-size: 11px;
     margin-bottom: 10px;
-}
-
-.arweave-expand {
-    border: 1px solid var(--border);
-    border-radius: var(--r-md);
-    overflow: hidden;
-    margin-top: 16px;
-}
-
-.arweave-expand-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 12px;
-    cursor: pointer;
-    background: var(--bg-surface);
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-2);
-    transition: background var(--t-fast);
-}
-
-.arweave-expand-header:hover {
-    background: var(--bg-hover);
-}
-
-.arweave-expand-body {
-    display: none;
-    padding: 12px;
-    border-top: 1px solid var(--border);
-    flex-direction: column;
-    gap: 10px;
-}
-
-.arweave-expand-body.open {
-    display: flex;
 }
 
 #wallet-textarea {

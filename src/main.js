@@ -1,4 +1,4 @@
-// ─── antiG-IDE — Main Entry ────────────────────────────
+// ─── Zap-IDE — Main Entry ────────────────────────────
 import "./global.css";
 import * as state from "./store/state.js";
 import { initTopbar } from "./components/Topbar.js";
@@ -19,9 +19,9 @@ import { importFolder, importSingleFile } from "./components/folderImport.js";
 import { initPreviewPanel, updatePreview } from "./components/previewPanel.js";
 import { openSettingsModal } from "./components/Models/settingModal.js";
 import { openShareModal } from "./components/Models/sharemodal.js";
+import { openOnboardingModal } from "./components/Models/onboardingModal.js";
 import { runCode, killWorker, detectLanguage } from "./runtime/sandbox.js";
 import { decode, clearHash } from "./sharing/urlshare.js";
-import { initBurnerWallet } from "./services/ao.js";
 import { initCommunityFeed } from "./components/CommunityFeed.js";
 
 // ─── Render skeleton HTML ─────────────────────────────────────
@@ -101,8 +101,6 @@ async function boot() {
   let editorAPI;
   try {
     editorAPI = await initEditor("editor-container");
-    // Start burner wallet generation in background
-    initBurnerWallet().catch(console.error);
   } catch (err) {
     console.error("Editor init failed:", err);
     appendLine("⚠ Editor failed to load: " + err.message, "stderr");
@@ -192,7 +190,7 @@ async function boot() {
   const fileTreeAPI = initFileTree({
     onFileSelect: (path) => {
       const files = state.get("files");
-      if (files && files[path]) {
+      if (files && files[path] !== undefined) {
         // Save current file content before switching
         const currentFile = state.get("currentFile");
         if (currentFile && state.get("files")[currentFile] !== undefined) {
@@ -203,13 +201,12 @@ async function boot() {
           state.set("files", updatedFiles);
         }
 
-        setCode(files[path]);
+        // Update state to the new file BEFORE setting code
         state.set("currentFile", path);
-        updateBreadcrumb(path);
-        // Setting filename triggers the editor.js state subscriber which
-        // sets the correct Monaco language automatically. We also call
-        // setLanguage explicitly with the full path for accuracy.
         state.set("filename", path.split("/").pop());
+        updateBreadcrumb(path);
+
+        setCode(files[path]);
         editorAPI?.setLanguage(getEditorLanguage(path));
       }
     },
@@ -342,8 +339,31 @@ async function boot() {
   state.subscribe("currentFile", updateEditorVisibility);
   updateEditorVisibility(state.get("currentFile"));
 
-  // Open settings on every new initialization
-  openSettingsModal();
+  // 10. Toggle AI panel visibility based on model choice
+  const updateAIPanelVisibility = (model) => {
+    const aiPanel = document.getElementById("ai-panel");
+    if (!aiPanel) return;
+    
+    if (model === "none") {
+      aiPanel.style.display = "none";
+      document.documentElement.style.setProperty("--ai-panel-w", "0px");
+    } else {
+      aiPanel.style.display = "flex";
+      aiPanel.style.flexDirection = "column";
+      // Only reset width if it's currently 0
+      if (getComputedStyle(document.documentElement).getPropertyValue('--ai-panel-w').trim() === '0px') {
+        document.documentElement.style.setProperty("--ai-panel-w", "480px");
+      }
+    }
+    // Allow Monaco to resize itself since grid changed
+    setTimeout(() => window.editor?.layout(), 0);
+  };
+
+  state.subscribe("model", updateAIPanelVisibility);
+  updateAIPanelVisibility(state.get("model"));
+
+  // Open onboarding on every new initialization
+  openOnboardingModal();
 } // End of boot()
 
 // ─── Folder Import Handler ────────────────────────────────────

@@ -56,16 +56,41 @@ export function buildVitePreviewHTML(files, preferredEntry) {
     "main.tsx",
     "main.js",
   ];
-  // IMPORTANT: Only boot from known Vite/React entrypoints.
-  // Never boot directly from component files like src/App.jsx (they usually export
-  // a component but do not call ReactDOM.createRoot().render()).
-  const preferredIsValidEntry =
-    preferredEntry && ENTRIES.includes(preferredEntry) && files[preferredEntry] != null;
 
-  const entryFile =
-    (preferredIsValidEntry ? preferredEntry : null) ||
-    ENTRIES.find((c) => files[c] != null) ||
-    ENTRIES[0];
+  // 1. Identify "Project Root" if we are in a subdirectory (e.g. Community/MyProject/src/App.jsx)
+  let projectRoot = "";
+  if (preferredEntry && preferredEntry.includes("/")) {
+    const parts = preferredEntry.split("/");
+    // If it's in Community/..., the project root is the first two parts
+    if (parts[0] === "Community" && parts.length >= 2) {
+      projectRoot = parts.slice(0, 2).join("/") + "/";
+    }
+  }
+
+  // 2. Find valid entry point
+  let entryFile = null;
+
+  // Priority 1: Exact match for preferred entry if it's a valid bootstrapper
+  if (preferredEntry && files[preferredEntry] && ENTRIES.some(e => preferredEntry.endsWith(e))) {
+    entryFile = preferredEntry;
+  }
+
+  // Priority 2: Standard entry points within the detected project root
+  if (!entryFile && projectRoot) {
+    const localEntry = ENTRIES.find(e => files[projectRoot + e] != null);
+    if (localEntry) entryFile = projectRoot + localEntry;
+  }
+
+  // Priority 3: Fallback to global standard entry points
+  if (!entryFile) {
+    entryFile = ENTRIES.find(e => files[e] != null);
+  }
+
+  // Priority 4: Hard fallback to first found entry point in any directory
+  if (!entryFile) {
+    const allPaths = Object.keys(files);
+    entryFile = allPaths.find(p => ENTRIES.some(e => p.endsWith("/" + e))) || ENTRIES[0];
+  }
 
   // ── 3. Safely serialize file map ──────────────────────────
   // Replace </script> so the JSON blob never closes the wrapping tag.
@@ -302,7 +327,7 @@ function __require(spec,fromFile){
     transformed=Babel.transform(source,{
       filename:actualPath,
       presets:[
-        ['react',{runtime:'classic'}],
+        ['react',{runtime:'automatic'}],
         ['env',{targets:{browsers:['last 2 Chrome versions']},modules:'commonjs'}]
       ],
       sourceType:'module',
@@ -419,15 +444,15 @@ try{
   </script>
 
   <!-- React 18 UMD -->
-  <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.development.js"
+  <script crossorigin src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.development.js"
           onerror="__cdnFail('React')"></script>
 
   <!-- ReactDOM 18 UMD -->
-  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.development.js"
+  <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.development.js"
           onerror="__cdnFail('ReactDOM')"></script>
 
   <!-- Babel standalone (JSX transform) -->
-  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.7/babel.min.js"
+  <script crossorigin src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.7/babel.min.js"
           onerror="__cdnFail('Babel')"></script>
 
   <!-- Virtual bundler + app boot -->

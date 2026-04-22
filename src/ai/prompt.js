@@ -1,9 +1,25 @@
 // ─── Prompt Templates ─────────────────────────────────────────
 
-export function buildPrompt(type, code, userMessage, errorContext = "") {
+export function buildPrompt(type, code, userMessage, errorContext = "", history = []) {
   const codeBlock = code?.trim()
     ? `\`\`\`javascript\n${code}\n\`\`\``
     : "_(no code yet)_";
+    
+  let historyContext = "";
+  if (history && history.length > 0) {
+    const recent = history.slice(-6); // last 6 turns (3 pairs)
+    const historyText = recent.map(msg => {
+      let content = msg.content;
+      // Truncate massively long generated code from previous AI answers to save tokens
+      if (msg.role === "assistant" && content.length > 1500) {
+        content = content.substring(0, 1500) + "\n... (code truncated to save tokens)";
+      }
+      return `${msg.role.toUpperCase()}: ${content}`;
+    }).join("\n\n");
+    
+    historyContext = `\n--- RECENT CHAT HISTORY ---\nThe following is the recent conversation context:\n${historyText}\n---------------------------\n`;
+  }
+
   const strictCodeOnlyRules = `STRICT OUTPUT CONTRACT (HIGHEST PRIORITY):
 You must obey this contract exactly. If any other instruction conflicts, this contract wins.
 
@@ -34,7 +50,7 @@ QUALITY REQUIREMENTS:
 - Preserve valid syntax and imports.
 - Do not truncate output intentionally.
 - If the request is ambiguous, choose the most reasonable full code implementation and still follow output shape strictly.
-- **CRITICAL FOR REACT**: If generating a React component, YOU MUST 'import React from "react"' and YOU MUST use 'export default' for the primary component (e.g., 'export default function App()'). Do NOT just use named exports ('export const').
+- **CRITICAL FOR REACT**: If generating React components, you MUST use MULTI_FILE mode. You MUST explicitly create 'index.html' and 'src/main.jsx' to mount the root component securely (using ReactDOM.createRoot), along with any other required React components. DO NOT output a single file for React, always output the full mountable project.
 - **AESTHETICS**: Make any generated UI look incredibly premium, modern, and beautiful. Use colorful aesthetics, glassmorphism, or sleek minimal designs with standard CSS or inline styles. Do NOT output plain HTML; it must look professionally designed.`;
 
   switch (type) {
@@ -45,7 +61,7 @@ MODE: SINGLE_FILE
 
 The user has this code:
 ${codeBlock}
-
+${historyContext}
 User request: ${userMessage}
 
 Write clean, well-commented Node.js compatible JavaScript. If writing new code, replace the entire editor content.
@@ -58,7 +74,7 @@ MODE: SINGLE_FILE
 
 Current code:
 ${codeBlock}
-
+${historyContext}
 ${errorContext ? `Error output:\n\`\`\`\n${errorContext}\n\`\`\`\n` : ""}
 ${userMessage ? `User message: ${userMessage}\n` : ""}
 Diagnose and fix the bug. Show the corrected full code in a single \`\`\`javascript block.`;
@@ -67,7 +83,7 @@ Diagnose and fix the bug. Show the corrected full code in a single \`\`\`javascr
       return `You are a patient Node.js educator.
 ${strictCodeOnlyRules}
 MODE: SINGLE_FILE
-
+${historyContext}
 The user asked for an explanation. Provide explanation as inline code comments only, not prose.
 Return a single \`\`\`javascript block containing the code with clear explanatory comments.
 
@@ -83,7 +99,7 @@ MODE: SINGLE_FILE
 
 Refactor the following code for better readability, performance, and modern JS practices:
 ${codeBlock}
-
+${historyContext}
 ${userMessage ? `Focus on: ${userMessage}\n` : ""}
 Show the refactored code in a single \`\`\`javascript block.`;
 
@@ -94,7 +110,7 @@ MODE: SINGLE_FILE
 
 Write comprehensive tests for this code:
 ${codeBlock}
-
+${historyContext}
 ${userMessage ? `Additional requirements: ${userMessage}\n` : ""}
 Use a simple test framework compatible with the browser sandbox (no jest/mocha imports — write self-contained assertions using try/catch or a simple assert helper).
 Wrap tests in a single \`\`\`javascript block. The tests should run when the code is executed.`;
@@ -103,14 +119,13 @@ Wrap tests in a single \`\`\`javascript block. The tests should run when the cod
       return `You are an expert React developer.
 ${strictCodeOnlyRules}
 MODE: MULTI_FILE
-
+${historyContext}
 Generate a complete, multi-file React Vite project for the following request:
 
 ${userMessage}
 
 Required files to produce (plus any additional component files you need):
 - package.json
-- package-lock.json
 - vite.config.js
 - index.html
 - src/main.jsx
@@ -135,13 +150,13 @@ Rules you MUST follow:
 
     case "chat":
     default:
-      return `You are a helpful Node.js and JavaScript expert assistant embedded in antiG-IDE — a browser-based code playground.
+      return `You are a helpful Node.js and JavaScript expert assistant embedded in Zap-IDE — a browser-based code playground.
 ${strictCodeOnlyRules}
 MODE: SINGLE_FILE
 
 Current editor code:
 ${codeBlock}
-
+${historyContext}
 User: ${userMessage}
 
 Return only a single \`\`\`javascript code block that best satisfies the request.`;

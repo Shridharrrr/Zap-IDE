@@ -5,8 +5,6 @@ const STORAGE_KEYS = {
     apiKey: 'ag_key',
     model: 'ag_model',
     theme: 'ag_theme',
-    communityBackend: 'ag_feed_backend',
-    aoProcessId: 'ag_ao_pid',
     githubUsername: 'ag_gh_user',
     githubToken: 'ag_gh_token',
 }
@@ -15,8 +13,6 @@ const state = {
     apiKey: localStorage.getItem('ag_key') || '',
     model: localStorage.getItem('ag_model') || 'qwen2.5:3b',
     theme: localStorage.getItem('ag_theme') || 'vs-dark',
-    communityBackend: localStorage.getItem('ag_feed_backend') || 'ao',
-    aoProcessId: localStorage.getItem('ag_ao_pid') || '',
     githubUsername: localStorage.getItem('ag_gh_user') || '',
     githubToken: localStorage.getItem('ag_gh_token') || '',
     filename: 'main.js',

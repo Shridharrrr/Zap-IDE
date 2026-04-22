@@ -8,7 +8,6 @@ export async function shareCode(codeContent) {
         { name: "App-Name", value: "antigravity-ide" },
     ];
 
-    // Generate a throwaway wallet — free for uploads under 100KB
     const arweave = Arweave.init({});
     const jwk = await arweave.wallets.generate();
 
@@ -20,11 +19,8 @@ export async function shareCode(codeContent) {
     const encoder = new TextEncoder();
     const data = encoder.encode(codeContent);
 
-    // Check size — warn if over 100KB
     if (data.byteLength > 100 * 1024) {
-        throw new Error(
-            `Code is ${(data.byteLength / 1024).toFixed(1)}KB — exceeds the 100KB free limit.`
-        );
+        throw new Error(`Code is ${(data.byteLength / 1024).toFixed(1)}KB — exceeds the 100KB free limit.`);
     }
 
     const result = await turbo.upload({
@@ -56,7 +52,7 @@ export async function shareProject(files, entryFile) {
 
     if (data.byteLength > 100 * 1024) {
         throw new Error(
-            `Project preview is ${(data.byteLength / 1024).toFixed(1)}KB — exceeds the 100KB free limit. Try URL share for smaller projects, or reduce files.`,
+            `Project preview is ${(data.byteLength / 1024).toFixed(1)}KB — exceeds the 100KB free limit.`,
         );
     }
 
@@ -94,7 +90,7 @@ async function waitForReadableLink(links, { attempts, delayMs }) {
             if (await isReadable(link)) return link;
         }
         if (i < attempts - 1) {
-            await sleep(delayMs);
+            await new Promise(r => setTimeout(r, delayMs));
         }
     }
     return null;
@@ -107,8 +103,4 @@ async function isReadable(url) {
     } catch {
         return false;
     }
-}
-
-function sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
 }

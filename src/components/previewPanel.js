@@ -65,7 +65,7 @@ export function initPreviewPanel() {
       </div>
     </div>
     <div class="preview-frame-container">
-      <iframe id="preview-frame" sandbox="allow-scripts allow-forms allow-popups allow-modals"></iframe>
+      <iframe id="preview-frame" sandbox="allow-scripts allow-forms allow-popups allow-modals allow-same-origin"></iframe>
     </div>
   `;
 
@@ -181,7 +181,7 @@ function generateHTMLWrapper(files, mainFile) {
 <html><head><meta charset="UTF-8">
 <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <style>body{margin:0;font-family:system-ui}</style></head>
 <body><div id="root"></div>
 <script type="text/babel">

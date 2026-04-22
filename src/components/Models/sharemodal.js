@@ -1,135 +1,124 @@
 // ─── Share Modal ──────────────────────────────────────────────
-import { getProjectShareURL, getProjectPayloadSize } from '../../sharing/urlshare.js'
-import { shareProject } from '../../sharing/arweaveshare.js'
+import { shareProject } from "../../sharing/arweaveshare.js";
 
-export function openShareModal({ getFiles, getEntryFile }) {
-    const existing = document.getElementById('share-modal-overlay')
-    if (existing) existing.remove()
+export async function openShareModal({ getFiles, getEntryFile }) {
+  const existing = document.getElementById("share-modal-overlay");
+  if (existing) existing.remove();
 
-    const files = getFiles?.() || {}
-    const entryFile = getEntryFile?.() || null
-    const shareURL = getProjectShareURL(files, entryFile)
-    const sizeKB = Math.round(getProjectPayloadSize(files, entryFile) / 1024 * 10) / 10
-    const sizeOK = sizeKB < 40
+  const files = getFiles?.() || {};
+  const entryFile = getEntryFile?.() || null;
 
-    const overlay = document.createElement('div')
-    overlay.id = 'share-modal-overlay'
-    overlay.className = 'modal-overlay'
+  const overlay = document.createElement("div");
+  overlay.id = "share-modal-overlay";
+  overlay.className = "modal-overlay";
 
-    overlay.innerHTML = `
+  overlay.innerHTML = `
     <div class="modal" role="dialog" aria-labelledby="share-title">
-      <h2 class="modal-title" id="share-title">Share</h2>
-
-      <div class="form-group">
-        <label class="form-label">Share URL</label>
-        <div class="url-preview-box" id="share-url-box">${escapeHtml(shareURL)}</div>
-        <p class="size-indicator ${sizeOK ? 'size-ok' : 'size-warn'}">
-          ${sizeOK
-            ? `✓ Payload: ${sizeKB} KB — safe for URL sharing`
-            : `⚠ Payload: ${sizeKB} KB — large! Consider Arweave deploy below`
-        }
-        </p>
-        <button class="btn" id="btn-copy-url" style="width:100%">
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M4 2h8v2H4zm-2 2h12v10H2zm2 2v6h8V6z" opacity="0.7"/>
+      <h2 class="modal-title" id="share-title">Share Project</h2>
+      <div id="share-content" class="form-group">
+        <p style="color:var(--text-muted); display:flex; align-items:center; gap:8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin">
+            <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
           </svg>
-          Copy Link
-        </button>
+          Deploying to Arweave...
+        </p>
       </div>
-
-      <div class="arweave-expand">
-        <div class="arweave-expand-header" id="arweave-toggle">
-          <span>🌐 Share to Arweave (permanent)</span>
-          <span id="arweave-chevron">▸</span>
-        </div>
-        <div class="arweave-expand-body" id="arweave-body">
-          <p style="font-size:12px;color:var(--text-muted);line-height:1.6">
-            Upload a runnable preview of your project to Arweave via Turbo SDK.<br>
-            No wallet is needed for small uploads.
-          </p>
-          <button class="btn btn-run" id="btn-deploy" style="width:100%;margin-top:8px">
-            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M8 1v10M4 7l4-6 4 6M2 14h12" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            Share Code to Arweave
-          </button>
-          <p class="arlink-result" id="arlink-result"></p>
-          <p id="deploy-status" style="font-size:11px;color:var(--text-muted);display:none"></p>
-        </div>
-      </div>
-
       <div class="modal-footer">
         <button class="btn" id="share-close">Close</button>
       </div>
     </div>
-  `
+  `;
 
-    document.body.appendChild(overlay)
+  const spinStyle = document.createElement("style");
+  spinStyle.innerHTML = `@keyframes spin { 100% { transform: rotate(360deg); } } .spin { animation: spin 1s linear infinite; }`;
+  overlay.appendChild(spinStyle);
 
-    // Copy link
-    overlay.querySelector('#btn-copy-url').addEventListener('click', () => {
-        navigator.clipboard.writeText(shareURL).then(() => {
-            const btn = overlay.querySelector('#btn-copy-url')
-            btn.textContent = '✓ Copied!'
-            btn.style.color = 'var(--success)'
-            setTimeout(() => {
-                btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4 2h8v2H4zm-2 2h12v10H2zm2 2v6h8V6z" opacity="0.7"/></svg> Copy Link`
-                btn.style.color = ''
-            }, 2000)
-        })
-    })
+  document.body.appendChild(overlay);
 
-    // Arweave expand toggle
-    overlay.querySelector('#arweave-toggle').addEventListener('click', () => {
-        const body = overlay.querySelector('#arweave-body')
-        const chevron = overlay.querySelector('#arweave-chevron')
-        body.classList.toggle('open')
-        chevron.textContent = body.classList.contains('open') ? '▾' : '▸'
-    })
+  const closeModal = () => overlay.remove();
+  overlay.querySelector("#share-close").addEventListener("click", closeModal);
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) closeModal();
+  });
+  const escHandler = (e) => {
+    if (e.key === "Escape") {
+      closeModal();
+      document.removeEventListener("keydown", escHandler);
+    }
+  };
+  document.addEventListener("keydown", escHandler);
 
-    // Deploy
-    overlay.querySelector('#btn-deploy').addEventListener('click', async () => {
-        const deployBtn = overlay.querySelector('#btn-deploy')
-        const statusEl = overlay.querySelector('#deploy-status')
-        const arLinkResult = overlay.querySelector('#arlink-result')
+  try {
+    const result = await shareProject(files, entryFile);
+    
+    const content = overlay.querySelector("#share-content");
+    content.innerHTML = `
+      <label class="form-label">Permanent Arweave Link</label>
+      <div class="url-preview-box" id="share-url-box" style="margin-bottom: 8px;">${escapeHtml(result.shareURL)}</div>
+      
+      <button class="btn" id="btn-copy-url" style="width:100%; margin-bottom: 16px;">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M4 2h8v2H4zm-2 2h12v10H2zm2 2v6h8V6z" opacity="0.7"/>
+        </svg>
+        Copy Link
+      </button>
 
-        deployBtn.disabled = true
-        statusEl.style.display = 'block'
-        arLinkResult.style.display = 'none'
+      <label class="form-label" style="font-size: 11px; opacity: 0.8; margin-bottom: 4px; display: block;">Fallback Tunnels</label>
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        ${result.links.map(link => `
+          <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-panel); padding:6px 8px; border-radius:4px; border:1px solid var(--border-subtle); font-size:11px;">
+            <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:80%; opacity: 0.8;">${escapeHtml(link)}</span>
+            <button class="icon-btn fallback-copy" data-url="${escapeHtml(link)}" title="Copy" style="padding: 4px; height: auto;">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M4 2h8v2H4zm-2 2h12v10H2zm2 2v6h8V6z" opacity="0.7"/>
+              </svg>
+            </button>
+          </div>
+        `).join('')}
+      </div>
+    `;
 
-        try {
-            statusEl.textContent = 'Uploading code to Arweave...'
-            const result = await shareProject(files, entryFile)
+    content.querySelector("#btn-copy-url").addEventListener("click", () => {
+      navigator.clipboard.writeText(result.shareURL).then(() => {
+        const btn = content.querySelector("#btn-copy-url");
+        btn.textContent = "✓ Copied!";
+        btn.style.color = "var(--success)";
+        setTimeout(() => {
+          btn.innerHTML =
+            '<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4 2h8v2H4zm-2 2h12v10H2zm2 2v6h8V6z" opacity="0.7"/></svg> Copy Link';
+          btn.style.color = "";
+        }, 2000);
+      });
+    });
 
-            arLinkResult.style.display = 'block'
-            const allLinks = (result.links || [result.shareURL])
-                .map((link) => `<a href="${escapeHtml(link)}" target="_blank" style="color:var(--teal);display:block;margin-top:4px">${escapeHtml(link)}</a>`)
-                .join('')
-            arLinkResult.innerHTML = `
-        ✓ Shared! ${result.isReady ? "Open this link:" : "Propagation pending. Try this link first:"}
-        <a href="${escapeHtml(result.shareURL)}" target="_blank" style="color:var(--teal);display:block;margin-top:4px">${escapeHtml(result.shareURL)}</a>
-        <span style="display:block;margin-top:8px;color:var(--text-muted)">Fallback gateways:</span>
-        ${allLinks}
-        ${result.isReady ? "" : `<span style="display:block;margin-top:8px;color:var(--text-muted)">If all links show 404, wait 1-5 minutes and retry.</span>`}
-      `
-            statusEl.style.display = 'none'
+    content.querySelectorAll(".fallback-copy").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        const url = e.currentTarget.getAttribute("data-url");
+        navigator.clipboard.writeText(url).then(() => {
+          const original = e.currentTarget.innerHTML;
+          e.currentTarget.innerHTML = `<span style="color:var(--success)">✓</span>`;
+          setTimeout(() => {
+            e.currentTarget.innerHTML = original;
+          }, 2000);
+        });
+      });
+    });
 
-        } catch (err) {
-            statusEl.textContent = '⚠ Share failed: ' + err.message
-            statusEl.style.color = 'var(--error)'
-        } finally {
-            deployBtn.disabled = false
-        }
-    })
-
-    // Close
-    const closeModal = () => overlay.remove()
-    overlay.querySelector('#share-close').addEventListener('click', closeModal)
-    overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal() })
-    const escHandler = (e) => { if (e.key === 'Escape') { closeModal(); document.removeEventListener('keydown', escHandler) } }
-    document.addEventListener('keydown', escHandler)
+  } catch (err) {
+    const content = overlay.querySelector("#share-content");
+    content.innerHTML = `
+      <div style="color:var(--error); padding:12px; background:rgba(255,0,0,0.1); border-radius:4px;">
+        <strong>Deployment Failed</strong><br/>
+        ${escapeHtml(err.message)}
+      </div>
+    `;
+  }
 }
 
 function escapeHtml(str) {
-    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }

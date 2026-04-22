@@ -12,6 +12,9 @@ let applyProjectRef = null; // callback: (files) => void
 // ─── Vite project request detector ───────────────────────────
 function looksLikeProjectRequest(msg) {
   return (
+    /(create|make|build|generate|scaffold|start|new|write|code)\s.{0,40}(vite|react|component|app|project|website|site|page|dashboard|todo|form)/i.test(
+      msg,
+    ) && /\breact\b/i.test(msg) ||
     /(create|make|build|generate|scaffold|start|new)\s.{0,40}(vite|react.*(app|project|website|site|page|dashboard|todo|form)|full.*(app|project|stack))/i.test(
       msg,
     ) ||
@@ -48,7 +51,7 @@ export function initAIPanel({ getCode, setCode, getOutput, onApplyProject }) {
     <div class="ai-input-wrap">
       <textarea
         id="ai-textarea"
-        placeholder="Ask anything… (Shift+Enter to send)"
+        placeholder="Ask anything…"
         rows="3"
       ></textarea>
       <div class="ai-input-footer">
@@ -145,7 +148,8 @@ async function submitAI({ type, getCode, setCode, userMessage = "" }) {
   });
 
   // Build prompt
-  const prompt = buildPrompt(resolvedType, code, userMessage, errorContext);
+  const currentHistory = state.get("chatHistory").slice(0, -1);
+  const prompt = buildPrompt(resolvedType, code, userMessage, errorContext, currentHistory);
 
   // Start AI response bubble
   streamingBubble = createStreamingBubble(setCode, applyProjectRef);
@@ -266,15 +270,15 @@ function createStreamingBubble(setCode, onApplyProject) {
           wrapperBtn.style.marginTop = "6px";
           wrapperBtn.innerHTML = `🚀 Preview as React App`;
           wrapperBtn.addEventListener("click", () => {
-             const wrapperFiles = {
-                 "src/App.jsx": extractedCode,
-                 "src/main.jsx": `import React from 'react';\nimport ReactDOM from 'react-dom/client';\nimport App from './App.jsx';\nimport './index.css';\n\nReactDOM.createRoot(document.getElementById('root')).render(<App />);`,
-                 "src/index.css": `body { margin: 0; padding: 20px; font-family: system-ui, sans-serif; background: #fff; }`,
-                 "index.html": `<!DOCTYPE html>\n<html lang="en">\n<body>\n  <div id="root"></div>\n  <script type="module" src="/src/main.jsx"></script>\n</body>\n</html>`,
-                 "package.json": `{\n  "name": "react-preview",\n  "type": "module",\n  "dependencies": {\n    "react": "^18.2.0",\n    "react-dom": "^18.2.0"\n  }\n}`,
-                 "vite.config.js": `import { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\nexport default defineConfig({ plugins: [react()] });`
-             };
-             onApplyProject?.(wrapperFiles);
+            const wrapperFiles = {
+              "src/App.jsx": extractedCode,
+              "src/main.jsx": `import React from 'react';\nimport ReactDOM from 'react-dom/client';\nimport App from './App.jsx';\n\nconst root = ReactDOM.createRoot(document.getElementById('root'));\nroot.render(React.createElement(App));`,
+              "src/index.css": `body { margin: 0; padding: 20px; font-family: system-ui, sans-serif; background: #fff; }`,
+              "index.html": `<!DOCTYPE html>\n<html lang="en">\n<body>\n  <div id="root"></div>\n  <script type="module" src="/src/main.jsx"></script>\n</body>\n</html>`,
+              "package.json": `{\n  "name": "react-preview",\n  "type": "module",\n  "dependencies": {\n    "react": "^18.2.0",\n    "react-dom": "^18.2.0"\n  }\n}`,
+              "vite.config.js": `import { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\nexport default defineConfig({ plugins: [react()] });`
+            };
+            onApplyProject?.(wrapperFiles);
           });
           el.appendChild(wrapperBtn);
         }
@@ -324,22 +328,22 @@ function appendMessage(
 
       const isReact = /import.*react/i.test(extractedCode) || /(export\s+default\s+(function|class)|const\s+\w+\s*=\s*\([^\)]*\)\s*=>).*return\s*(<|\()/is.test(extractedCode);
       if (isReact) {
-          const wrapperBtn = document.createElement("button");
-          wrapperBtn.className = "btn apply-btn";
-          wrapperBtn.style.marginTop = "6px";
-          wrapperBtn.textContent = "Preview as React App";
-          wrapperBtn.addEventListener("click", () => {
-             const wrapperFiles = {
-                 "src/App.jsx": extractedCode,
-                 "src/main.jsx": `import React from 'react';\nimport ReactDOM from 'react-dom/client';\nimport App from './App.jsx';\nimport './index.css';\n\nReactDOM.createRoot(document.getElementById('root')).render(<App />);`,
-                 "src/index.css": `body { margin: 0; padding: 20px; font-family: system-ui, sans-serif; background: #fff; }`,
-                 "index.html": `<!DOCTYPE html>\n<html lang="en">\n<body>\n  <div id="root"></div>\n  <script type="module" src="/src/main.jsx"></script>\n</body>\n</html>`,
-                 "package.json": `{\n  "name": "react-preview",\n  "type": "module",\n  "dependencies": {\n    "react": "^18.2.0",\n    "react-dom": "^18.2.0"\n  }\n}`,
-                 "vite.config.js": `import { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\nexport default defineConfig({ plugins: [react()] });`
-             };
-             applyProjectRef?.(wrapperFiles);
-          });
-          el.appendChild(wrapperBtn);
+        const wrapperBtn = document.createElement("button");
+        wrapperBtn.className = "btn apply-btn";
+        wrapperBtn.style.marginTop = "6px";
+        wrapperBtn.textContent = "Preview as React App";
+        wrapperBtn.addEventListener("click", () => {
+          const wrapperFiles = {
+            "src/App.jsx": extractedCode,
+            "src/main.jsx": `import React from 'react';\nimport ReactDOM from 'react-dom/client';\nimport App from './App.jsx';\n\nconst root = ReactDOM.createRoot(document.getElementById('root'));\nroot.render(React.createElement(App));`,
+            "src/index.css": `body { margin: 0; padding: 20px; font-family: system-ui, sans-serif; background: #fff; }`,
+            "index.html": `<!DOCTYPE html>\n<html lang="en">\n<body>\n  <div id="root"></div>\n  <script type="module" src="/src/main.jsx"></script>\n</body>\n</html>`,
+            "package.json": `{\n  "name": "react-preview",\n  "type": "module",\n  "dependencies": {\n    "react": "^18.2.0",\n    "react-dom": "^18.2.0"\n  }\n}`,
+            "vite.config.js": `import { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\nexport default defineConfig({ plugins: [react()] });`
+          };
+          applyProjectRef?.(wrapperFiles);
+        });
+        el.appendChild(wrapperBtn);
       }
     }
   } else {
