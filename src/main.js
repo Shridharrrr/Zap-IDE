@@ -1,4 +1,4 @@
-// ─── Antigravity IDE — Main Entry ────────────────────────────
+// ─── antiG-IDE — Main Entry ────────────────────────────
 import "./global.css";
 import * as state from "./store/state.js";
 import { initTopbar } from "./components/Topbar.js";
@@ -52,14 +52,21 @@ document.getElementById("app").innerHTML = `
   </aside>
 
   <main id="editor-area">
-    <div id="editor-pane">
+    <div id="empty-state">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--border-strong)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:16px;">
+        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+        <polyline points="13 2 13 9 20 9"></polyline>
+      </svg>
+      <p style="font-family:var(--font-ui); font-size:13px; font-weight:500; color:var(--text-3);">Create or select a file to begin</p>
+    </div>
+    <div id="editor-pane" style="display: none;">
       <div id="editor-breadcrumb">
-        <span class="bc-file" id="bc-filename">main.js</span>
+        <span class="bc-file" id="bc-filename">—</span>
       </div>
       <div id="editor-container"></div>
     </div>
-    <div id="panel-resize-handle"></div>
-    <div id="bottom-pane">
+    <div id="panel-resize-handle" style="display: none;"></div>
+    <div id="bottom-pane" style="display: none;">
       <div id="output-panel"></div>
     </div>
   </main>
@@ -99,7 +106,21 @@ async function boot() {
   }
 
   const getCode = () => editorAPI?.getValue() ?? "";
-  const setCode = (code) => editorAPI?.setValue(code);
+  const setCode = (code) => {
+    let currentFile = state.get("currentFile");
+    if (!currentFile) {
+      currentFile = "Component.jsx";
+      state.set("currentFile", currentFile);
+      updateBreadcrumb(currentFile);
+      state.set("filename", currentFile);
+    }
+    // Auto-sync into file tree state so rendering updates
+    const files = state.get("files") || {};
+    files[currentFile] = code;
+    state.set("files", { ...files });
+    
+    editorAPI?.setValue(code);
+  };
 
   // Auto-save on editor changes
   let saveTimeout;
@@ -286,8 +307,37 @@ async function boot() {
     },
   });
 
-  // Local model mode: no cloud API key reminder needed.
-}
+  // 9. Toggle Editor visibility based on current file selection
+  const updateEditorVisibility = (file) => {
+    const emptyState = document.getElementById("empty-state");
+    const editorPane = document.getElementById("editor-pane");
+    const resizeHandle = document.getElementById("panel-resize-handle");
+    const bottomPane = document.getElementById("bottom-pane");
+    
+    if (file) {
+      emptyState.style.display = "none";
+      editorPane.style.display = "flex";
+      resizeHandle.style.display = "block"; // vertical bar
+
+      // Let Monaco resize after becoming visible
+      setTimeout(() => window.editor?.layout(), 0);
+    } else {
+      emptyState.style.display = "flex";
+      editorPane.style.display = "none";
+      resizeHandle.style.display = "none";
+    }
+    
+    // Always show terminal
+    bottomPane.style.display = "flex";
+  };
+
+  // Wire up visibility toggling 
+  state.subscribe("currentFile", updateEditorVisibility);
+  updateEditorVisibility(state.get("currentFile"));
+
+  // Open settings on every new initialization
+  openSettingsModal();
+} // End of boot()
 
 // ─── Folder Import Handler ────────────────────────────────────
 async function handleImportFolder() {
@@ -432,48 +482,8 @@ function showViewerBanner(setCode, originalCode) {
   });
 }
 
-// ─── API Key reminder ─────────────────────────────────────────
-function showKeyReminder() {
-  const existing = document.querySelector(".key-reminder");
-  if (existing) return;
 
-  const el = document.createElement("div");
-  el.className = "key-reminder";
-  el.style.cssText = `
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: #0f0f1e;
-    border: 1px solid var(--accent);
-    border-radius: 12px;
-    padding: 16px 20px;
-    max-width: 280px;
-    font-size: 13px;
-    color: var(--text-secondary);
-    box-shadow: 0 0 30px var(--accent-glow);
-    z-index: 300;
-    animation: modal-in 0.2s ease;
-    line-height: 1.5;
-  `;
-  el.innerHTML = `
-    <p style="color:var(--accent-bright);font-weight:700;margin-bottom:8px">⚡ Set up AI</p>
-    <p>Add your Gemini API key to enable AI assistance.</p>
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn btn-run" style="font-size:12px;padding:5px 12px" id="key-reminder-open">Open Settings</button>
-      <button class="btn" style="font-size:12px;padding:5px 12px" id="key-reminder-dismiss">Later</button>
-    </div>
-  `;
 
-  document.body.appendChild(el);
-
-  el.querySelector("#key-reminder-open").addEventListener("click", () => {
-    el.remove();
-    openSettingsModal();
-  });
-  el.querySelector("#key-reminder-dismiss").addEventListener("click", () =>
-    el.remove(),
-  );
-}
 
 // ─── Pane resize + collapse wiring ────────────────────────────
 function initResizeHandles() {

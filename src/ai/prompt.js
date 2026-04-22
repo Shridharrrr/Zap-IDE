@@ -107,6 +107,9 @@ Generate a complete, multi-file React Vite project for the following request:
 ${userMessage}
 
 Required files to produce (plus any additional component files you need):
+- package.json
+- package-lock.json
+- vite.config.js
 - index.html
 - src/main.jsx
 - src/App.jsx
@@ -130,7 +133,7 @@ Rules you MUST follow:
 
     case "chat":
     default:
-      return `You are a helpful Node.js and JavaScript expert assistant embedded in Antigravity IDE — a browser-based code playground.
+      return `You are a helpful Node.js and JavaScript expert assistant embedded in antiG-IDE — a browser-based code playground.
 ${strictCodeOnlyRules}
 MODE: SINGLE_FILE
 

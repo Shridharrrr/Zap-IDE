@@ -25,11 +25,25 @@ export function initPreviewPanel() {
     `;
     previewTab.addEventListener("click", togglePreview);
     paneTabs.appendChild(previewTab);
+
+    // Also let the Terminal tab switch back
+    const terminalTab = document.getElementById("pane-tab-output");
+    if (terminalTab) {
+      terminalTab.addEventListener("click", hidePreview);
+    }
   }
 
   // ── Create preview container (initially hidden) ─────────────
   previewContainer = document.createElement("div");
   previewContainer.id = "preview-container";
+  Object.assign(previewContainer.style, {
+    display: "none",
+    flex: "1",
+    flexDirection: "column",
+    minHeight: "0",
+    overflow: "hidden",
+    background: "var(--bg-surface)"
+  });
   previewContainer.innerHTML = `
     <div class="pane-header" style="border-bottom:1px solid var(--border);flex-shrink:0">
       <div class="pane-tabs" style="flex:1">

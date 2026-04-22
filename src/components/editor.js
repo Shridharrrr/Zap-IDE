@@ -24,17 +24,7 @@ const EXT_LANG_MAP = {
   xml: "xml",
 };
 
-const DEFAULT_CODE = `// Welcome to Antigravity IDE ✦
-// A browser-based Node.js playground powered by AI
-
-const greet = (name) => {
-  return \`Hello, \${name}! Ready to build something extraordinary?\`
-}
-
-console.log(greet('World'))
-
-// Try the AI panel →  ask it to "write a fibonacci generator"
-// or hit Run to execute this code
+const DEFAULT_CODE = `// Welcome, ship with browser ✦
 `;
 
 let monacoInstance = null;

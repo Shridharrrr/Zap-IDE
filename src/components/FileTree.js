@@ -235,6 +235,17 @@ function renderFileTree(files, container, onFileSelect) {
             toggleFolder(path, el)
         })
     })
+
+    // Add delete handlers
+    container.querySelectorAll('.delete-file-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation() // Prevent file select
+            const path = btn.dataset.path
+            if (confirm(`Are you sure you want to delete ${path.split('/').pop()}?`)) {
+                if (fileTreeAPI) fileTreeAPI.deleteFile(path)
+            }
+        })
+    })
 }
 
 function buildTreeStructure(files) {
@@ -268,7 +279,13 @@ function renderTreeNode(node, path, onFileSelect, level = 0) {
         return `
             <div class="file-tree-file" data-path="${node.path}" style="padding-left: ${level * 12}px">
                 <span class="file-icon">${icon}</span>
-                <span class="file-name">${escapeHtml(node.name)}</span>
+                <span class="file-name" style="flex: 1;">${escapeHtml(node.name)}</span>
+                <button class="icon-btn-sm delete-file-btn" data-path="${node.path}" title="Delete File" style="opacity:0; padding:2px; height:auto; width:auto; margin-left:auto;">
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M5.5 5.5A.5.5 0 016 6v6a.5.5 0 01-1 0V6a.5.5 0 01.5-.5zm2.5 0a.5.5 0 01.5.5v6a.5.5 0 01-1 0V6a.5.5 0 01.5-.5zm3 .5a.5.5 0 00-1 0v6a.5.5 0 001 0V6z"/>
+                        <path fill-rule="evenodd" d="M14.5 3a1 1 0 01-1 1H13v9a2 2 0 01-2 2H5a2 2 0 01-2-2V4h-.5a1 1 0 01-1-1V2a1 1 0 011-1H6a1 1 0 011-1h2a1 1 0 011 1h3.5a1 1 0 011 1v1zM4.118 4L4 4.059V13a1 1 0 001 1h6a1 1 0 001-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                    </svg>
+                </button>
             </div>
         `
     }

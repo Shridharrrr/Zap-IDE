@@ -6,13 +6,13 @@ export function initTopbar({ onRun, onStop, onShare, onSettings }) {
   if (!el) return;
 
   el.innerHTML = `
-    <a class="topbar-logo" href="#" aria-label="Antigravity IDE">
+    <a class="topbar-logo" href="#" aria-label="antiG-IDE">
       <svg width="26" height="26" viewBox="0 0 64 64" fill="none">
         <path d="M16 32L32 14L48 32L32 50Z" fill="none" stroke="var(--accent-2)" stroke-width="2.5"/>
         <path d="M24 32L32 22L40 32L32 42Z" fill="var(--accent)" opacity="0.9"/>
         <circle cx="32" cy="32" r="3" fill="#fff"/>
       </svg>
-      <span class="topbar-brand">anti<span>gravity</span></span>
+      <span class="topbar-brand">antiG<span>-IDE</span></span>
     </a>
 
     <div class="topbar-divider"></div>

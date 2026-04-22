@@ -244,7 +244,7 @@ function createStreamingBubble(setCode, onApplyProject) {
                 `;
         applyBtn.addEventListener("click", () => {
           setCode(extractedCode);
-          applyBtn.textContent = "✓ Applied!";
+          applyBtn.innerHTML = "✓ Applied!";
           applyBtn.style.color = "var(--success)";
           setTimeout(() => {
             applyBtn.innerHTML = `
@@ -257,6 +257,27 @@ function createStreamingBubble(setCode, onApplyProject) {
           }, 2000);
         });
         el.appendChild(applyBtn);
+
+        // Detect if it's a React component
+        const isReact = /import.*react/i.test(extractedCode) || /(export\s+default\s+(function|class)|const\s+\w+\s*=\s*\([^\)]*\)\s*=>).*return\s*(<|\()/is.test(extractedCode);
+        if (isReact) {
+          const wrapperBtn = document.createElement("button");
+          wrapperBtn.className = "btn apply-btn";
+          wrapperBtn.style.marginTop = "6px";
+          wrapperBtn.innerHTML = `🚀 Preview as React App`;
+          wrapperBtn.addEventListener("click", () => {
+             const wrapperFiles = {
+                 "src/App.jsx": extractedCode,
+                 "src/main.jsx": `import React from 'react';\nimport ReactDOM from 'react-dom/client';\nimport App from './App.jsx';\nimport './index.css';\n\nReactDOM.createRoot(document.getElementById('root')).render(<App />);`,
+                 "src/index.css": `body { margin: 0; padding: 20px; font-family: system-ui, sans-serif; background: #fff; }`,
+                 "index.html": `<!DOCTYPE html>\n<html lang="en">\n<body>\n  <div id="root"></div>\n  <script type="module" src="/src/main.jsx"></script>\n</body>\n</html>`,
+                 "package.json": `{\n  "name": "react-preview",\n  "type": "module",\n  "dependencies": {\n    "react": "^18.2.0",\n    "react-dom": "^18.2.0"\n  }\n}`,
+                 "vite.config.js": `import { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\nexport default defineConfig({ plugins: [react()] });`
+             };
+             onApplyProject?.(wrapperFiles);
+          });
+          el.appendChild(wrapperBtn);
+        }
       }
     },
 
@@ -300,6 +321,26 @@ function appendMessage(
       applyBtn.textContent = "Apply to Editor";
       applyBtn.addEventListener("click", () => setCode(extractedCode));
       el.appendChild(applyBtn);
+
+      const isReact = /import.*react/i.test(extractedCode) || /(export\s+default\s+(function|class)|const\s+\w+\s*=\s*\([^\)]*\)\s*=>).*return\s*(<|\()/is.test(extractedCode);
+      if (isReact) {
+          const wrapperBtn = document.createElement("button");
+          wrapperBtn.className = "btn apply-btn";
+          wrapperBtn.style.marginTop = "6px";
+          wrapperBtn.textContent = "Preview as React App";
+          wrapperBtn.addEventListener("click", () => {
+             const wrapperFiles = {
+                 "src/App.jsx": extractedCode,
+                 "src/main.jsx": `import React from 'react';\nimport ReactDOM from 'react-dom/client';\nimport App from './App.jsx';\nimport './index.css';\n\nReactDOM.createRoot(document.getElementById('root')).render(<App />);`,
+                 "src/index.css": `body { margin: 0; padding: 20px; font-family: system-ui, sans-serif; background: #fff; }`,
+                 "index.html": `<!DOCTYPE html>\n<html lang="en">\n<body>\n  <div id="root"></div>\n  <script type="module" src="/src/main.jsx"></script>\n</body>\n</html>`,
+                 "package.json": `{\n  "name": "react-preview",\n  "type": "module",\n  "dependencies": {\n    "react": "^18.2.0",\n    "react-dom": "^18.2.0"\n  }\n}`,
+                 "vite.config.js": `import { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\nexport default defineConfig({ plugins: [react()] });`
+             };
+             applyProjectRef?.(wrapperFiles);
+          });
+          el.appendChild(wrapperBtn);
+      }
     }
   } else {
     el.textContent = content;
