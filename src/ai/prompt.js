@@ -33,7 +33,9 @@ QUALITY REQUIREMENTS:
 - Return complete code only (no partial snippets).
 - Preserve valid syntax and imports.
 - Do not truncate output intentionally.
-- If the request is ambiguous, choose the most reasonable full code implementation and still follow output shape strictly.`;
+- If the request is ambiguous, choose the most reasonable full code implementation and still follow output shape strictly.
+- **CRITICAL FOR REACT**: If generating a React component, YOU MUST 'import React from "react"' and YOU MUST use 'export default' for the primary component (e.g., 'export default function App()'). Do NOT just use named exports ('export const').
+- **AESTHETICS**: Make any generated UI look incredibly premium, modern, and beautiful. Use colorful aesthetics, glassmorphism, or sleek minimal designs with standard CSS or inline styles. Do NOT output plain HTML; it must look professionally designed.`;
 
   switch (type) {
     case "write":

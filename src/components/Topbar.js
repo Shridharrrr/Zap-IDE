@@ -1,7 +1,7 @@
 // ─── Topbar Component ─────────────────────────────────────────
 import * as state from "../store/state.js";
 
-export function initTopbar({ onRun, onStop, onShare, onSettings }) {
+export function initTopbar({ onRun, onStop, onShare, onSettings, onCommunity }) {
   const el = document.getElementById("topbar");
   if (!el) return;
 
@@ -25,6 +25,17 @@ export function initTopbar({ onRun, onStop, onShare, onSettings }) {
     <span class="topbar-spacer"></span>
 
     <div class="topbar-actions">
+      <button class="btn btn-ghost" id="btn-community" title="Community Feed">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px; height:16px;">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="2" y1="12" x2="22" y2="12"></line>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+        </svg>
+        Community
+      </button>
+
+      <div class="topbar-divider"></div>
+
       <button class="btn btn-run" id="btn-run">
         <span class="run-icon">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor">
@@ -95,6 +106,9 @@ export function initTopbar({ onRun, onStop, onShare, onSettings }) {
     }
   });
 
+  el.querySelector("#btn-community").addEventListener("click", () =>
+    onCommunity?.(),
+  );
   el.querySelector("#btn-share").addEventListener("click", () => onShare?.());
   el.querySelector("#btn-settings").addEventListener("click", () =>
     onSettings?.(),

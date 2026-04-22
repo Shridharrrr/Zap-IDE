@@ -12,6 +12,10 @@ export function openSettingsModal() {
     const currentModel = state.get('model')
     const currentKey = state.get('apiKey') || ''
     const currentTheme = state.get('theme')
+    const feedBackend = state.get('communityBackend') || 'ao'
+    const aoPid = state.get('aoProcessId') || ''
+    const ghUser = state.get('githubUsername') || ''
+    const ghTok = state.get('githubToken') || ''
 
     overlay.innerHTML = `
     <div class="modal" role="dialog" aria-labelledby="settings-title">
@@ -67,6 +71,35 @@ export function openSettingsModal() {
         </select>
       </div>
 
+      <div class="form-group">
+        <label class="form-label" for="settings-feed-backend">Community feed backend</label>
+        <select class="form-select" id="settings-feed-backend">
+          <option value="ao" ${feedBackend === 'ao' ? 'selected' : ''}>Arweave AO (shared process)</option>
+          <option value="gist" ${feedBackend === 'gist' ? 'selected' : ''}>GitHub Gists (username feed)</option>
+        </select>
+        <p style="font-size:11px;color:var(--text-muted);margin-top:6px">
+          AO: deploy <code>registry.lua</code> once, paste the process ID below. Gists: set a GitHub username to read; add a fine-grained PAT to publish (stored locally).
+        </p>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="settings-ao-pid">AO process ID</label>
+        <input class="form-input" id="settings-ao-pid" type="text" placeholder="From BetterIDEA / ao deploy" value="${escapeHtml(aoPid)}" autocomplete="off" spellcheck="false" />
+        <p style="font-size:11px;color:var(--text-muted);margin-top:6px">
+          Optional override for <code>VITE_AO_PROCESS_ID</code> in <code>.env</code>.
+        </p>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="settings-gh-user">GitHub username (gist feed)</label>
+        <input class="form-input" id="settings-gh-user" type="text" placeholder="Organization or user whose public gists appear in Community" value="${escapeHtml(ghUser)}" autocomplete="off" spellcheck="false" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="settings-gh-token">GitHub token (gist publish only)</label>
+        <input class="form-input" id="settings-gh-token" type="password" placeholder="ghp_… or fine-grained token" value="${escapeHtml(ghTok)}" autocomplete="off" spellcheck="false" />
+      </div>
+
       <div class="modal-footer">
         <button class="btn" id="settings-cancel">Cancel</button>
         <button class="btn btn-run" id="settings-save">Save</button>
@@ -87,6 +120,10 @@ export function openSettingsModal() {
         state.set('apiKey', overlay.querySelector('#settings-apikey').value.trim())
         state.set('model', overlay.querySelector('#settings-model').value)
         state.set('theme', overlay.querySelector('#settings-theme').value)
+        state.set('communityBackend', overlay.querySelector('#settings-feed-backend').value)
+        state.set('aoProcessId', overlay.querySelector('#settings-ao-pid').value.trim())
+        state.set('githubUsername', overlay.querySelector('#settings-gh-user').value.trim())
+        state.set('githubToken', overlay.querySelector('#settings-gh-token').value.trim())
         closeModal()
     })
 

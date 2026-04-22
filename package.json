@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@ardrive/turbo-sdk": "^1.41.1",
+    "@permaweb/aoconnect": "^0.0.94",
+    "arweave": "^1.15.7",
     "lz-string": "^1.5.0",
     "monaco-editor": "^0.45.0",
     "vite-plugin-node-polyfills": "^0.26.0"

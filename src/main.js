@@ -21,6 +21,8 @@ import { openSettingsModal } from "./components/Models/settingModal.js";
 import { openShareModal } from "./components/Models/sharemodal.js";
 import { runCode, killWorker, detectLanguage } from "./runtime/sandbox.js";
 import { decode, clearHash } from "./sharing/urlshare.js";
+import { initBurnerWallet } from "./services/ao.js";
+import { initCommunityFeed } from "./components/CommunityFeed.js";
 
 // ─── Render skeleton HTML ─────────────────────────────────────
 document.getElementById("app").innerHTML = `
@@ -96,10 +98,11 @@ async function boot() {
   // 2. Init Preview Panel
   initPreviewPanel();
 
-  // 3. Init Monaco Editor
   let editorAPI;
   try {
     editorAPI = await initEditor("editor-container");
+    // Start burner wallet generation in background
+    initBurnerWallet().catch(console.error);
   } catch (err) {
     console.error("Editor init failed:", err);
     appendLine("⚠ Editor failed to load: " + err.message, "stderr");
@@ -233,7 +236,10 @@ async function boot() {
     }
   });
 
-  // 7. Init Topbar
+  // 7. Init Community Feed
+  const communityFeed = initCommunityFeed();
+
+  // 8. Init Topbar
   initTopbar({
     onRun() {
       handleRun(getCode);
@@ -258,6 +264,7 @@ async function boot() {
     onSettings() {
       openSettingsModal();
     },
+    onCommunity: () => communityFeed.open(),
   });
 
   // 8. Init AI Panel

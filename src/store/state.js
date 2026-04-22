@@ -1,12 +1,24 @@
 // ─── Reactive Vanilla Store ───────────────────────────────────
 // Simple pub/sub with localStorage persistence for key settings
 
-const PERSIST_KEYS = ['apiKey', 'model', 'theme']
+const STORAGE_KEYS = {
+    apiKey: 'ag_key',
+    model: 'ag_model',
+    theme: 'ag_theme',
+    communityBackend: 'ag_feed_backend',
+    aoProcessId: 'ag_ao_pid',
+    githubUsername: 'ag_gh_user',
+    githubToken: 'ag_gh_token',
+}
 
 const state = {
     apiKey: localStorage.getItem('ag_key') || '',
     model: localStorage.getItem('ag_model') || 'qwen2.5:3b',
     theme: localStorage.getItem('ag_theme') || 'vs-dark',
+    communityBackend: localStorage.getItem('ag_feed_backend') || 'ao',
+    aoProcessId: localStorage.getItem('ag_ao_pid') || '',
+    githubUsername: localStorage.getItem('ag_gh_user') || '',
+    githubToken: localStorage.getItem('ag_gh_token') || '',
     filename: 'main.js',
     files: {},         // Map of filename -> content for folder view
     currentFile: null, // Currently selected file path
@@ -25,9 +37,8 @@ export function get(key) {
 
 export function set(key, val) {
     state[key] = val
-    if (PERSIST_KEYS.includes(key)) {
-        const storageKey = key === 'apiKey' ? 'ag_key' : key === 'model' ? 'ag_model' : 'ag_theme'
-        localStorage.setItem(storageKey, val)
+    if (STORAGE_KEYS[key]) {
+        localStorage.setItem(STORAGE_KEYS[key], val)
     }
     if (subscribers[key]) {
         subscribers[key].forEach(fn => fn(val))
